@@ -1,0 +1,75 @@
+---
+- name: Verify ClickHouse installation
+  hosts: all
+  gather_facts: false
+  tasks:
+    # 1. Проверка процесса ClickHouse вместо systemctl
+    - name: Check ClickHouse process
+      ansible.builtin.shell: |
+        ps aux | grep clickhouse-server | grep -v grep
+      register: process_check
+      changed_when: false
+      tags: verify
+
+    - name: Assert ClickHouse is running
+      ansible.builtin.assert:
+        that: process_check.rc == 0
+        fail_msg: "ClickHouse process not found"
+        success_msg: "ClickHouse process is running (PID: {{ (process_check.stdout|trim).split()[1] }})"
+      tags: verify
+
+    # 2. Проверка порта 9000
+    - name: Check ClickHouse port
+      ansible.builtin.wait_for:
+        port: 9000
+        timeout: 10
+      tags: verify
+
+    # 3. Проверка подключения (основной тест)
+    - name: Test basic connection
+      ansible.builtin.command: >
+        clickhouse-client --host 127.0.0.1
+        --user default
+        --query "SELECT 1"
+      register: connection_test
+      changed_when: false
+      tags: verify
+
+    - name: Assert connection works
+      ansible.builtin.assert:
+        that: connection_test.rc == 0
+        fail_msg: "Failed to connect to ClickHouse"
+        success_msg: "Successfully connected to ClickHouse"
+      tags: verify
+
+    # 4. Проверка версии
+    - name: Get ClickHouse version
+      ansible.builtin.command: >
+        clickhouse-client --host 127.0.0.1
+        --query "SELECT version()"
+      register: version_check
+      changed_when: false
+      tags: verify
+
+    - name: Assert version is returned
+      ansible.builtin.assert:
+        that: 
+          - version_check.rc == 0
+          - version_check.stdout | length > 0
+        fail_msg: "Failed to get ClickHouse version"
+        success_msg: "ClickHouse version: {{ version_check.stdout }}"
+      tags: verify
+
+    # 5. Проверка конфигурационного файла
+    - name: Verify config file exists
+      ansible.builtin.stat:
+        path: /etc/clickhouse-server/config.xml
+      register: config_file
+      tags: verify
+
+    - name: Assert config exists
+      ansible.builtin.assert:
+        that: config_file.stat.exists
+        fail_msg: "Config file not found"
+        success_msg: "Config file exists at {{ config_file.stat.path }}"
+      tags: verify

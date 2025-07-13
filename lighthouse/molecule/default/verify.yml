@@ -1,0 +1,74 @@
+---
+- name: Verify Lighthouse installation
+  hosts: all
+  gather_facts: false
+  tasks:
+    # 1. Проверка установленных пакетов
+    - name: Check required packages are installed
+      ansible.builtin.command:
+        cmd: "dpkg -l {{ item }} | grep '^ii'"
+      loop:
+        - nginx
+        - unzip
+        - curl
+      changed_when: false
+      register: pkg_checks
+      ignore_errors: yes
+
+    - name: Fail if packages not installed
+      ansible.builtin.fail:
+        msg: "Package {{ item.item }} not installed!"
+      when: item.rc != 0
+      loop: "{{ pkg_checks.results }}"
+
+    # 2. Проверка директории Lighthouse
+    - name: Verify Lighthouse directory exists
+      ansible.builtin.command: test -d /var/www/lighthouse
+      changed_when: false
+      register: dir_check
+      failed_when: dir_check.rc != 0
+
+    # 3. Проверка файлов Lighthouse
+    - name: Check Lighthouse files
+      ansible.builtin.command: ls /var/www/lighthouse
+      changed_when: false
+      register: files_check
+      failed_when: files_check.stdout == ""
+
+    # 4. Проверка конфигурации Nginx
+    - name: Verify Nginx config
+      ansible.builtin.command: test -f /etc/nginx/sites-available/lighthouse
+      changed_when: false
+      register: config_check
+      failed_when: config_check.rc != 0
+
+    # 5. Проверка символической ссылки
+    - name: Verify site enabled
+      ansible.builtin.command: test -L /etc/nginx/sites-enabled/lighthouse
+      changed_when: false
+      register: symlink_check
+      failed_when: symlink_check.rc != 0
+
+    # 6. Проверка отключения дефолтного сайта
+    - name: Verify default site disabled
+      ansible.builtin.command: test ! -f /etc/nginx/sites-enabled/default
+      changed_when: false
+      register: default_site_check
+      failed_when: default_site_check.rc != 0
+
+    # 7. Проверка процесса Nginx
+    - name: Check Nginx process
+      ansible.builtin.command: pgrep -x nginx
+      changed_when: false
+      register: nginx_process
+      failed_when: nginx_process.rc != 0
+
+    # 8. Проверка доступности Lighthouse
+    - name: Test Lighthouse accessibility
+      ansible.builtin.command: |
+        curl -sSf http://localhost >/dev/null
+      register: curl_test
+      retries: 3
+      delay: 5
+      until: curl_test.rc == 0
+      changed_when: false

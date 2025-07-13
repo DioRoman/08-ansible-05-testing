@@ -1,0 +1,22 @@
+---
+driver:
+  name: podman
+platforms:
+  - name: ubuntu-instance
+    image: ubuntu:22.04
+    pre_build_image: false  # Разрешаем модификацию образа
+    command: /bin/sh -c "while true; do sleep 10000; done"
+    dockerfile: Dockerfile.ubuntu
+dependency:
+  name: galaxy
+  enabled: false  # отключает загрузку requirements.yml
+provisioner:
+  name: ansible
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - destroy
+    - create
+    - converge
+    - destroy
