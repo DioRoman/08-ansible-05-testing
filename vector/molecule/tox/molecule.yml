@@ -5,18 +5,31 @@ platforms:
   - name: ubuntu-instance
     image: ubuntu:22.04
     pre_build_image: false  # Разрешаем модификацию образа
-    command: /bin/sh -c "while true; do sleep 10000; done"
+    command: sleep infinity  # Более эффективно чем while true
     dockerfile: Dockerfile.ubuntu
-dependency:
-  name: galaxy
-  enabled: false  # отключает загрузку requirements.yml
+    tmpfs:  # Добавляем tmpfs для ускорения
+      - /tmp
+      - /run
+  - name: debian-instance
+    image: debian:bookworm-slim  # Debian 12 (bookworm)
+    pre_build_image: false  # Разрешаем модификацию образа
+    command: sleep infinity
+    dockerfile: Dockerfile.debian
+    tmpfs:
+      - /tmp
+      - /run
 provisioner:
   name: ansible
 verifier:
   name: ansible
 scenario:
+  name: tox
   test_sequence:
     - destroy
+    - dependency
     - create
+    - prepare
     - converge
+    - idempotence
+    - verify
     - destroy

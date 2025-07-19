@@ -6,11 +6,11 @@ python3 -m venv venv
 
 source venv/bin/activate
 
-pip3 install ansible-dev-tools
+pipx install ansible-dev-tools
 
-pip3 install molecule-docker
+pipx install molecule-docker
 
-pip3 install jinja2
+pipx install jinja2
 
 Настройка molecule
 
@@ -36,12 +36,18 @@ docker run --privileged=True -v /mnt/c/Users/rlyst/Netology/08-ansible-05-testin
 
 Tox
 
-pip3 install tox
+rm -rf .tox/
 
-pip3 install molecule-podman
+tox -v
+
+ansible-galaxy collection install -f containers.podman
+
+pipx install tox
+
+pipx install molecule-podman
 
 molecule drivers
 
 molecule init scenario tox --driver-name podman
 
-molecule matrix -s tox test
+molecule test -s tox --destroy=never 
