@@ -6,9 +6,6 @@ python3 -m venv venv
 
 source venv/bin/activate
 
-pipx install molecule
-pipx inject molecule ansible ansible-lint molecule-plugins[docker,podman] docker podman
-
 pipx install ansible-dev-tools
 
 pipx install molecule-docker
@@ -54,3 +51,6 @@ molecule drivers
 molecule init scenario tox --driver-name podman
 
 molecule test -s tox --destroy=never 
+```
+
+</details>
