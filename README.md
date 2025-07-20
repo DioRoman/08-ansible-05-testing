@@ -6,6 +6,9 @@ python3 -m venv venv
 
 source venv/bin/activate
 
+pipx install molecule
+pipx inject molecule ansible ansible-lint molecule-plugins[docker,podman] docker podman
+
 pipx install ansible-dev-tools
 
 pipx install molecule-docker
