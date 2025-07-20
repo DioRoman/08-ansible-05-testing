@@ -1,6 +1,6 @@
 ---
 driver:
-  name: podman
+  name: docker
 lint: |
   ansible-lint .
 platforms:
